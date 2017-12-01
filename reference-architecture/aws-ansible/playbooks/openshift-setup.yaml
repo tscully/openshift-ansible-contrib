@@ -15,6 +15,7 @@
       - "aws"
       node-labels:
       - "role={{ openshift_node_labels.role }}"
+    openshift_clusterid: sysdig
     openshift_master_debug_level: "{{ master_debug_level | default(debug_level, true) }}"
     openshift_master_access_token_max_seconds: 2419200
     openshift_master_api_port: "{{ console_port }}"
@@ -22,8 +23,8 @@
     osm_cluster_network_cidr: 172.16.0.0/16
     openshift_registry_selector: "role=infra"
     openshift_router_selector: "role=infra"
-    openshift_hosted_router_replicas: 3
-    openshift_hosted_registry_replicas: 3
+    openshift_hosted_router_replicas: 1
+    openshift_hosted_registry_replicas: 1
     openshift_master_cluster_method: native
     openshift_node_local_quota_per_fsgroup: 512Mi
     openshift_cloudprovider_kind: aws
@@ -35,14 +36,11 @@
     deployment_type: openshift-enterprise
     os_sdn_network_plugin_name: "{{ openshift_sdn }}"
     openshift_master_identity_providers:
-    - name: github
-      kind: GitHubIdentityProvider
+    - name: htpasswd_auth
+      kind: HTPasswdPasswordIdentityProvider 
       login: true
-      challenge: false
-      mapping_method: claim
-      clientID: "{{ github_client_id }}"
-      clientSecret: "{{ github_client_secret }}"
-      organizations: "{{ github_organization }}"
+      challenge: true
+      filename: /etc/origin/master/htpasswd
     osm_use_cockpit: true
     containerized: false
     # registry
@@ -58,7 +56,7 @@
     openshift_hosted_registry_acceptschema2: true
     openshift_hosted_registry_enforcequota: true
     # metrics
-    openshift_hosted_metrics_storage_kind: dynamic
+    #openshift_hosted_metrics_storage_kind: dynamic
     openshift_hosted_metrics_storage_volume_size: "{{ openshift_hosted_metrics_storage_volume_size }}"
     openshift_metrics_hawkular_nodeselector: {"role":"infra"}
     openshift_metrics_cassandra_nodeselector: {"role":"infra"}
@@ -71,3 +69,6 @@
     openshift_logging_es_nodeselector: {"role":"infra"}
     openshift_logging_kibana_nodeselector: {"role":"infra"}
     openshift_logging_curator_nodeselector: {"role":"infra"}
+
+    # certs
+    openshift_master_named_certificates: [{"certfile": "/etc/letsencrypt/live/openshift-master.oscp.red/cert.pem", "keyfile": "/etc/letsencrypt/live/openshift-master.oscp.red/privkey.pem", "cafile":"/etc/letsencrypt/live/openshift-master.oscp.red/fullchain.pem","names": ["openshift-master.oscp.red"]}]

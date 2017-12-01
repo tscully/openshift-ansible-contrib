@@ -708,7 +708,9 @@
           {"Ref": "PrivateSubnet3"}
             ],
         "Instances": [
-          {"Ref": "Master01"}
+          {"Ref": "Master01"},
+          {"Ref": "Master02"},
+          {"Ref": "Master03"}
             ]
         }
     },
@@ -740,7 +742,9 @@
           {"Ref": "PublicSubnet3"}
             ],
         "Instances": [
-          {"Ref": "Master01"}
+          {"Ref": "Master01"},
+          {"Ref": "Master02"},
+          {"Ref": "Master03"}
             ]
       }
     },
@@ -777,7 +781,9 @@
           {"Ref": "PublicSubnet3"}
         	],
         "Instances": [
-          {"Ref": "InfraNode01"}
+          {"Ref": "InfraNode01"},
+          {"Ref": "InfraNode02"},
+          {"Ref": "InfraNode03"}
             ]
       }
     },
@@ -892,6 +898,8 @@
         "InfraElb",
         "MasterIntElb",
         "Master01",
+        "Master02",
+        "Master03",
         "Bastion",
         "MasterExtElb"
       ],
@@ -929,10 +937,34 @@
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["Master01", "PrivateIp"] }]
           },
           {
+            "Name": {"Fn::Join": [".", ["ose-master02",{"Ref": "Route53HostedZone"}]]},
+            "Type": "A",
+			"TTL": "300",
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["Master02", "PrivateIp"] }]
+          },
+          {
+            "Name": {"Fn::Join": [".", ["ose-master03",{"Ref": "Route53HostedZone"}]]},
+            "Type": "A",
+			"TTL": "300",
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["Master03", "PrivateIp"] }]
+          },
+          {
             "Name": {"Fn::Join": [".", ["ose-infra-node01",{"Ref": "Route53HostedZone"}]]},
             "Type": "A",
 			"TTL": "300",
 		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraNode01", "PrivateIp"] }]
+          },
+          {
+            "Name": {"Fn::Join": [".", ["ose-infra-node02",{"Ref": "Route53HostedZone"}]]},
+            "Type": "A",
+			"TTL": "300",
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraNode02", "PrivateIp"] }]
+          },
+	  {
+            "Name": {"Fn::Join": [".", ["ose-infra-node03",{"Ref": "Route53HostedZone"}]]},
+            "Type": "A",
+			"TTL": "300",
+		    "ResourceRecords": [{ "Fn::GetAtt" : ["InfraNode03", "PrivateIp"] }]
           },
 {% for idx in range(1, app_node_count|int + 1) %}
           {
@@ -1049,6 +1081,122 @@
          ]
      }
   },
+    "Master02" : {
+       "Type" : "AWS::EC2::Instance",
+       "DependsOn": ["MasterInstanceProfile"],
+       "Properties" : {
+          "ImageId" : {"Ref": "AmiId"},
+          "UserData": {"Ref": "MasterUserData"},
+          "KeyName" : {"Ref": "KeyName"},
+          "InstanceType": {"Ref": "MasterInstanceType"},
+          "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["MasterSG", "GroupId"] }, { "Fn::GetAtt" : ["EtcdSG", "GroupId"] }],
+          "SubnetId" : {"Ref": "PrivateSubnet2"},
+          "IamInstanceProfile": { "Ref": "MasterInstanceProfile" },
+          "Tags": [
+            { "Key": "Name",
+              "Value": {"Fn::Join": [".", ["ose-master02",{"Ref": "PublicHostedZone"}]]}
+            },
+            { "Key": "KubernetesCluster",
+              "Value": { "Ref": "AWS::StackName" }
+            },
+            { "Key": "openshift-role",
+              "Value": "master"
+            }
+          ],
+          "BlockDeviceMappings" : [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": "50",
+              "VolumeType": "gp2"
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "MasterDockerVolSize"},
+              "VolumeType": {"Ref": "MasterDockerVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdc",
+            "Ebs": {
+              "DeleteOnTermination": "false",
+              "VolumeSize": {"Ref": "MasterEtcdVolSize"},
+              "VolumeType": {"Ref": "MasterEtcdVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdd",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": "5",
+              "VolumeType": "gp2"
+            }
+          }
+         ]
+     }
+   },
+    "Master03" : {
+       "Type" : "AWS::EC2::Instance",
+       "DependsOn": ["MasterInstanceProfile"],
+       "Properties" : {
+          "ImageId" : {"Ref": "AmiId"},
+          "UserData": {"Ref": "MasterUserData"},
+          "KeyName" : {"Ref": "KeyName"},
+	  "InstanceType": {"Ref": "MasterInstanceType"},
+	  "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["MasterSG", "GroupId"] }, { "Fn::GetAtt" : ["EtcdSG", "GroupId"] }],
+          "SubnetId" : {"Ref": "PrivateSubnet3"},
+          "IamInstanceProfile": { "Ref": "MasterInstanceProfile" },
+          "Tags": [
+            { "Key": "Name",
+              "Value": {"Fn::Join": [".", ["ose-master03",{"Ref": "PublicHostedZone"}]]}
+            },
+            { "Key": "KubernetesCluster",
+              "Value": { "Ref": "AWS::StackName" }
+            },
+            { "Key": "openshift-role",
+              "Value": "master"
+            }
+          ],
+          "BlockDeviceMappings" : [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": "50",
+              "VolumeType": "gp2"
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "MasterDockerVolSize"},
+              "VolumeType": {"Ref": "MasterDockerVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdc",
+            "Ebs": {
+              "DeleteOnTermination": "false",
+              "VolumeSize": {"Ref": "MasterEtcdVolSize"},
+              "VolumeType": {"Ref": "MasterEtcdVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdd",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": "5",
+              "VolumeType": "gp2"
+            }
+          }
+         ]
+     }
+   },
     "InfraNode01" : {
        "Type" : "AWS::EC2::Instance",
        "DependsOn": ["NodeInstanceProfile"],
@@ -1099,6 +1247,106 @@
          ]
      }
     },
+    "InfraNode02" : {
+       "Type" : "AWS::EC2::Instance",
+       "DependsOn": ["NodeInstanceProfile"],
+       "Properties" : {
+          "ImageId" : {"Ref": "AmiId"},
+          "UserData": {"Ref": "NodeUserData"},
+          "KeyName" : {"Ref": "KeyName"},
+          "InstanceType": {"Ref": "InfraInstanceType"},
+          "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
+          "SubnetId" : {"Ref": "PrivateSubnet2"},
+          "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
+          "Tags": [
+            { "Key": "Name",
+              "Value": {"Fn::Join": [".", ["ose-infra-node02",{"Ref": "PublicHostedZone"}]]}
+            },
+            { "Key": "KubernetesCluster",
+              "Value": { "Ref": "AWS::StackName" }
+            },
+            { "Key": "openshift-role",
+              "Value": "infra"
+            }
+          ],
+          "BlockDeviceMappings" : [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": "50",
+              "VolumeType": "gp2" 
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeDockerVolSize"},
+              "VolumeType": {"Ref": "NodeDockerVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdc",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": "50",
+              "VolumeType": "gp2"
+            }
+          }
+         ]
+     }
+ },
+    "InfraNode03" : {
+       "Type" : "AWS::EC2::Instance",
+       "DependsOn": ["NodeInstanceProfile"],
+       "Properties" : {
+          "ImageId" : {"Ref": "AmiId"},
+          "UserData": {"Ref": "NodeUserData"},
+          "KeyName" : {"Ref": "KeyName"},
+          "InstanceType": {"Ref": "InfraInstanceType"},
+          "SecurityGroupIds": [{ "Fn::GetAtt" : ["NodeSG", "GroupId"] }, { "Fn::GetAtt" : ["InfraSG", "GroupId"] }],
+          "SubnetId" : {"Ref": "PrivateSubnet3"},
+          "IamInstanceProfile": { "Ref": "NodeInstanceProfile" },
+          "Tags": [
+            { "Key": "Name",
+              "Value": {"Fn::Join": [".", ["ose-infra-node03",{"Ref": "PublicHostedZone"}]]}
+            },
+            { "Key": "KubernetesCluster",
+              "Value": { "Ref": "AWS::StackName" }
+            },
+            { "Key": "openshift-role",
+              "Value": "infra"
+            }
+          ],
+          "BlockDeviceMappings" : [
+          {
+            "DeviceName": "/dev/sda1",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": "50",
+              "VolumeType": "gp2"
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdb",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": {"Ref": "NodeDockerVolSize"},
+              "VolumeType": {"Ref": "NodeDockerVolType"}
+            }
+          },
+          {
+            "DeviceName": "/dev/xvdc",
+            "Ebs": {
+              "DeleteOnTermination": "true",
+              "VolumeSize": "50",
+              "VolumeType": "gp2"
+            }
+          }
+         ]
+     }
+ },
 {% set rotator = 1 %}
 {% for idx in range(1, app_node_count|int + 1) %}
 {% if rotator == 4 %}

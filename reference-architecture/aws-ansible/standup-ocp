@@ -1,0 +1,6 @@
+./ose-on-aws.py.backup --keypair=OSCP-key --create-key=yes --key-path=/home/centos/.ssh/id_rsa.pub \
+--region=eu-west-1 --public-hosted-zone=oscp.red --deployment-type=origin --ami=ami-5f76b626 \
+--github-client-secret=48fa5ea7f996a64e404962ce251bfb0abd282ae1 --github-organization=oscp-origin \
+--github-client-id=f8df636a9a00678636b9 --openshift-metrics-deploy=false \
+--openshift-logging-deploy=false  \
+--node-instance-type=m4.xlarge --app-instance-type=m4.xlarge
